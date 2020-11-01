@@ -1,0 +1,611 @@
+---
+title: "DSC 520 - Final Project"
+author: "Brandon May"
+date: "2/4/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## DSC 520 - Final Project
+
+```{r packages, echo = TRUE, message = FALSE}
+library(data.table)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(pastecs)
+library(psych)
+library(class)
+```
+
+To make things easier I'm going to rename some of the column names to get the symbols out of the variables since this creates problems in R down the line.  I'm also removing the commas, in the total_gdp column so that R treats these as numeric and not as a string.
+
+```{r loading data, echo = TRUE}
+suicideData1 <- fread("Suicide_Dataset.csv")
+as.numeric(gsub(",","",suicideData1$total_gdp))
+suicideData2 <- suicideData1 %>% dplyr::select(-"HDI for year") %>% dplyr::select(-"generation") %>% dplyr::select(-"country-year") %>% filter(country %in% c("United States", "United Kingdom", "France", "Germany", "South Africa")) %>% rename(total_gdp = `gdp_for_year ($)`) %>% rename(gdp_per_capita = `gdp_per_capita ($)`) %>% rename(suicide_rate = `suicides/100k pop`)
+summary(suicideData2)
+        
+suicidedata <- suicideData2 %>% dplyr::select(-`suicides_no`, -`population`)
+suicidedata$total_gdp <- as.numeric(gsub(",","",suicidedata$total_gdp))
+
+usonly <- suicideData2 %>% filter(country == "United States")
+
+```
+
+First, I am going to extract the data from the Ages 25-34 years age range in the countries of the United States, the UK, South Africa, Germany, and France and set these up as five different datasets to make them easier to work with. I am also removing the country-year variable as it is redundant.  Finally, I am going to remove the total suicide number and country population since our variable of suicide rate/100k population is telling us the same information just in a different way.  I have also renamed the gdp_for_year, gdp_per_capita, and suicide rate/100K since the symbols in the variable names could create problems in R in the future.
+
+
+```{r subsetting data, echo = TRUE}
+
+countrymale <- suicidedata %>% dplyr::select(country, year, sex, age, suicide_rate, total_gdp, gdp_per_capita) %>% filter(country %in% c("United States", "United Kingdom", "Germany", "France", "South Africa"), age == "25-34 years", sex == "male")
+countrymalesuiciderate <- countrymale$suicide_rate
+countrymalegdpcapita <- countrymale$gdp_per_capita
+countrymalevar <-countrymale$country
+countrymale
+
+countryfemale <- suicidedata %>% dplyr::select(country, year, sex, age, suicide_rate, total_gdp, gdp_per_capita) %>% filter(country %in% c("United States", "United Kingdom", "Germany", "France", "South Africa"), age == "25-34 years", sex == "female")
+countryfemalesuiciderate <- countryfemale$suicide_rate
+countryfemalegdpcapita <- countryfemale$gdp_per_capita
+countryfemalevar <- countryfemale$country
+countryfemale
+
+usdata <- suicidedata %>% filter(country == "United States", age == "25-34 years")
+ussuiciderate <- usdata$suicide_rate
+usgdpcapita <- usdata$gdp_per_capita
+ustotgdp <- usdata$total_gdp
+usdata
+
+ukdata <- suicidedata %>% filter(country == "United Kingdom", age == "25-34 years")
+uksuiciderate <- ukdata$suicide_rate
+ukgdpcapita <- ukdata$gdp_per_capita
+uktotgdp <- ukdata$total_gdp
+ukdata
+
+germanydata <- suicidedata %>% filter(country == "Germany", age == "25-34 years")
+germanysuiciderate <- germanydata$suicide_rate
+germanygdpcapita <- germanydata$gdp_per_capita
+germanytotgdp <- germanydata$total_gdp
+germanydata
+
+francedata <- suicidedata %>% filter(country == "France", age == "25-34 years")
+francesuiciderate <- francedata$suicide_rate
+francegdpcapita <- francedata$gdp_per_capita
+francetotgdp <- francedata$total_gdp
+francedata
+
+safdata <- suicidedata %>% filter(country == "South Africa", age == "25-34 years")
+safsuiciderate <- safdata$suicide_rate
+safgdpcapita <- safdata$gdp_per_capita
+saftotgdp <- safdata$total_gdp
+safdata
+
+```
+We will do a histogram for the suicide rates by country using ggplot.
+
+```{r histogram, echo = TRUE}
+ggplot(usdata, aes(x = suicide_rate, col = sex)) + geom_histogram(aes(y = ..density..), binwidth = 0.1) + stat_function(fun = dnorm, color = "red", args = list(mean = mean(usdata$suicide_rate, na.rm = TRUE), sd = sd(usdata$suicide_rate, na.rm = TRUE))) + xlab("Suicide Rate Per 100,000 People") + ylab("Counts") + ggtitle("Histogram for US Data on Suicide Rate")
+
+ggplot(ukdata, aes(x = suicide_rate, col = sex)) + geom_histogram(aes(y = ..density..), binwidth = 0.1) + stat_function(fun = dnorm, color = "red", args = list(mean = mean(ukdata$suicide_rate, na.rm = TRUE), sd = sd(ukdata$suicide_rate, na.rm = TRUE))) + xlab("Suicide Rate Per 100,000 People") + ylab("Counts") + ggtitle("Histogram for UK Data on Suicide Rate")
+
+ggplot(francedata, aes(x = suicide_rate, col = sex)) + geom_histogram(aes(y = ..density..), binwidth = 0.1) + stat_function(fun = dnorm, color = "red", args = list(mean = mean(francedata$suicide_rate, na.rm = TRUE), sd = sd(francedata$suicide_rate, na.rm = TRUE))) + xlab("Suicide Rate Per 100,000 People") + ylab("Counts") + ggtitle("Histogram for France Data on Suicide Rate")
+
+ggplot(germanydata, aes(x = suicide_rate, col =sex)) + geom_histogram(aes(y = ..density..), binwidth = 0.1) + stat_function(fun = dnorm, color = "red", args = list(mean = mean(germanydata$suicide_rate, na.rm = TRUE), sd = sd(germanydata$suicide_rate, na.rm = TRUE))) + xlab("Suicide Rate Per 100,000 People") + ylab("Counts") + ggtitle("Histogram for Germany Data on Suicide Rate")
+
+ggplot(safdata, aes(x = suicide_rate, col = sex)) + geom_histogram(aes(y = ..density..), binwidth = 0.1) + stat_function(fun = dnorm, color = "red", args = list(mean = mean(safdata$suicide_rate, na.rm = TRUE), sd = sd(safdata$suicide_rate, na.rm = TRUE))) + xlab("Suicide Rate Per 100,000 People") + ylab("Counts") + ggtitle("Histogram for South Africa Data on Suicide Rate")
+
+```
+
+The above graphs indicate non-normal distributions so when computing our correlation between our variables, we will use Kendall's tau since it is good for non-normal distributions and since our sample data size is relatively small.  I also wanted to see the relationship between total country's gdp and suicide rate.
+
+```{r correlation, echo = TRUE}
+cor.test(ussuiciderate, usgdpcapita, method = "kendall")
+cor.test(uksuiciderate, ukgdpcapita, method = "kendall")
+cor.test(francesuiciderate, francegdpcapita, method = "kendall")
+cor.test(germanysuiciderate, germanygdpcapita, method = "kendall")
+cor.test(safsuiciderate, safgdpcapita, method = "kendall")
+
+cor.test(ussuiciderate, ustotgdp, method = "kendall")
+cor.test(uksuiciderate, uktotgdp, method = "kendall")
+cor.test(francesuiciderate, francetotgdp, method = "kendall")
+cor.test(germanysuiciderate, germanytotgdp, method = "kendall")
+cor.test(safsuiciderate, saftotgdp, method = "kendall")
+```
+
+For the relationship between suicide rate as per capita GDP for our five countries, we get r values of -0.09018, -0.1579, -0.3664, -0.2582, and 0.1550 for the US, UK, France, Germany, and South Africa respectively.  Our R^2 values of these are 0.0081, 0.0249, 0.1342, 0.0666, and 0.0240 for the US, UK, France, Germany, and South Africa respectively.  For the relationship between suicide rate and total country gdp, we get r values of -0.088, -0.1665, -0.3687, -0.2674, and 0.1602 for the US, UK, France, Germany, and South Africa respectively.  The R^2 values for these countries respectively are 0.0077, 0.0277, 0.1359, 0.0715, and 0.0256. The only statistically significant correlations are between france suicide rate and gdp per capita, germany suicide rate and gdp per capita, and between france and germany's suicide rate and total gdp.  This seems to check out.  Our total country GDP values seem to match with our per capita values which makes sense in that one is corrected for number of people in the country.  The r values of the US, UK, France, and Germany have negative correlations between suicide rate and GDP per capita and Total GDP suggesting as gdp increases, the suicide rate decreases.  Interestingly enough, South Africa shows that as GDP per capita and Total GDP increase, the suicide rate increases.
+
+
+Now we will visualize the relationship between our variables with graphs using ggplot by gender.
+
+```{r ggplot, echo = TRUE}
+ggplot(usdata, aes(x = year, y = suicide_rate, col = sex)) + geom_line() + geom_point() + ggtitle("Plot of US Suicide Rate by Year and Gender") + xlab("Year") + ylab("Suicide Rate per 100,000 People")
+
+ggplot(ukdata, aes(x = year, y = suicide_rate, col = sex)) + geom_line() + geom_point() + ggtitle("Plot of United Kingdom Suicide Rate by Year and Gender") + xlab("Year") + ylab("Suicide Rate per 100,000 People")
+
+ggplot(francedata, aes(x = year, y = suicide_rate, col = sex)) + geom_line() + geom_point() + ggtitle("Plot of France Suicide Rate by Year and Gender") + xlab("Year") + ylab("Suicide Rate per 100,000 People")
+
+ggplot(germanydata, aes(x = year, y = suicide_rate, col = sex)) + geom_line() + geom_point() + ggtitle("Plot of Germany Suicide Rate by Year and Gender") + xlab("Year") + ylab("Suicide Rate per 100,000 People")
+
+ggplot(safdata, aes(x = year, y = suicide_rate, col = sex)) + geom_line() + geom_point() + ggtitle("Plot of South Africa Suicide Rate by Year and Gender") + xlab("Year") + ylab("Suicide Rate per 100,000 People")
+```
+
+Across all five countries, the suicide rates for males are higher than females.  In general, female suicide rates appear to be decreasing year over year with the exception of the US and South Africa.  The US suicide rate for females is more or less a horizontal line and constant while the South Africa female suicide rate appears to be slightly increasing.  South Africa has suicide rates increasing (males more than females).  However, the South Africa data appears to have significant amounts of variability, especially for the male gender.  THe suicide rates for both genders in the UK, France, and Germany appear to be decreasing year over year.
+
+
+I also wanted to compare the different countries suicide rates and split them up according to gender using ggplot as scatterplots to see if there are any interesting relationships.
+
+```{r countrymale/female plots, echo = TRUE}
+
+ggplot(countrymale, aes(x = year, y = suicide_rate, col = country)) + geom_line() + geom_point() + ggtitle("Plot of Five Different Country's Male Suicide Rate by Year") + xlab("Year") + ylab("Suicide Rate per 100,000 People")
+
+ggplot(countryfemale, aes(x = year, y = suicide_rate, col = country)) + geom_line() + geom_point() + ggtitle("Plot of Five Different Country's Female Suicide Rate by Year") + xlab("Year") + ylab("Suicide Rate per 100,000 People")
+
+```
+
+For the male gender looking at suicide rates between the five different countries, this graph makes it clearer that suicide rates France, UK, and Germany have have a net downward trend with the France suicide rate decreasing the most.  The US suicide rate initially declined and then has increased over recent years.  The UK suicide rate for males increased in the 2000s and then has settled down to its suicide rate similar to what it was in the 1980s.  The South Africa suicide rate for males also appears to be more or less stable.  The US most recently has the highest current suicide rate followed by France, Germany, UK, and then South Africa.  
+
+For the female gender looking at suicide rates between the five different countries, this graph once again makes it more clear that suicide rates for females have a downward trend for France and Germany.  The South Africa and UK suicide rates appears approximately stable.  However, of more concern is the rise in suicide rates in females.  Once again though, relatively speaking, the female suicide rates for all five countries are lower than the male suicide rate.  While looking at South Africa though, the difference is quite small (on the order of 1-2 people per 100,000).
+
+Since most of these graphs appear to show a linear relationship so we will start with a simple linear regression here and also do a multiple regression comparing suicide rate by country with the gdp per capita and gender.
+
+```{r linear regression, echo = TRUE}
+USAmodel1 <- lm(formula = suicide_rate ~ gdp_per_capita, data = usdata)
+USAmodel2 <- lm(formula = suicide_rate ~ gdp_per_capita + sex, data = usdata)
+summary(USAmodel1)
+
+confint(USAmodel1)
+
+summary(USAmodel2)
+
+confint(USAmodel2)
+
+UKmodel1 <- lm(suicide_rate ~ gdp_per_capita, data = ukdata)
+UKmodel2 <- lm(suicide_rate ~ gdp_per_capita + sex, data = ukdata)
+summary(UKmodel1)
+
+confint(UKmodel1)
+
+summary(UKmodel2)
+
+confint(UKmodel2)
+
+Framodel1 <- lm(suicide_rate ~ gdp_per_capita, data = francedata)
+Framodel2 <- lm(suicide_rate ~ gdp_per_capita + sex, data = francedata)
+summary(Framodel1)
+
+confint(Framodel1)
+
+summary(Framodel2)
+
+confint(Framodel2)
+
+Germmodel1 <- lm(suicide_rate ~ gdp_per_capita, data = germanydata)
+Germmodel2 <- lm(suicide_rate ~ gdp_per_capita + sex, data = germanydata)
+summary(Germmodel1)
+
+confint(Germmodel1)
+
+summary(Germmodel2)
+
+confint(Germmodel2)
+
+SAmodel1 <- lm(suicide_rate ~ gdp_per_capita, data = safdata)
+SAmodel2 <- lm(suicide_rate ~ gdp_per_capita + sex, data = safdata)
+summary(SAmodel1)
+
+confint(SAmodel1)
+
+summary(SAmodel2)
+
+confint(SAmodel2)
+
+anova(USAmodel1, USAmodel2)
+
+anova(UKmodel1, UKmodel2)
+
+anova(Framodel1, Framodel2)
+
+anova(Germmodel1, Germmodel2)
+
+anova(SAmodel1, SAmodel2)
+
+```
+
+For the USA data, you can see that when just comparing the suicide rate by the GDP, there is not a statistically significant relationship.  However, when gender is added into the model, there is good fit with a high R^2 value of 0.97.
+
+For the UK data, there is no statistically significant relationship with the suicide rate predicted by GDP.  When gender is added there is a statistically significant relationship with high R^2 value.
+
+For the France data, there is a statistically significant relationship with the suicide rate predicted by GDP but with a low R value indicating a fairly weak correlation.  When comparing both gender and the GDP capita rate, there is statistically significant relationship between both variables and a high R^2 value.
+
+For the Germany data, there is not a statistically significant relationship with the suicide rate predicted by GDP.  When comparing both gender and GDP capita rate, there is a statistically significant relationship between both variables and a high R^2 value.
+
+For the South Africa data, there is not a statistically significant relationship with the suicide rate predicted by GDP alone.  When comparing both gender and GDP capita rate, there is a statistically significant relationship when both variables are included with a a fairly high R^2 value but not as high as the other countries.
+
+Furthermore, none of the confidence intervals cross zero indicating in general we have good models to varying degress based on the R^2 statistic.
+
+We will need to check for outliers and influential cases in our data.
+
+```{r outliers and influential data, echo = TRUE}
+
+usdata$residuals<-resid(USAmodel2)
+usdata$standardized.residuals <- rstandard(USAmodel2)
+usdata$studentized.residuals <- rstudent(USAmodel2)
+usdata$cooks.distance <- cooks.distance(USAmodel2)
+usdata$dfbeta <- dfbeta(USAmodel2)
+usdata$dffit <- dffits(USAmodel2)
+usdata$leverage <- hatvalues(USAmodel2)
+usdata$covariance.ratios <- covratio(USAmodel2)
+
+write.table(usdata, "US Data with Diagnostics", sep = "\t", row.names = FALSE)
+
+usdata$large.residual <- usdata$standardized.residuals > 2 | usdata$standardized.residuals < -2
+sum(usdata$large.residual)
+usdata[usdata$large.residual, c("year", "suicide_rate", "gdp_per_capita", "sex", "standardized.residuals", "cooks.distance", "leverage", "covariance.ratios")]
+
+ukdata$residuals<-resid(UKmodel2)
+ukdata$standardized.residuals <- rstandard(UKmodel2)
+ukdata$studentized.residuals <- rstudent(UKmodel2)
+ukdata$cooks.distance <- cooks.distance(UKmodel2)
+ukdata$dfbeta <- dfbeta(UKmodel2)
+ukdata$dffit <- dffits(UKmodel2)
+ukdata$leverage <- hatvalues(UKmodel2)
+ukdata$covariance.ratios <- covratio(UKmodel2)
+
+write.table(usdata, "UK Data with Diagnostics", sep = "\t", row.names = FALSE)
+
+ukdata$large.residual <- ukdata$standardized.residuals > 2 | ukdata$standardized.residuals < -2
+sum(ukdata$large.residual)
+ukdata[ukdata$large.residual, c("year", "suicide_rate", "gdp_per_capita", "sex", "standardized.residuals", "cooks.distance", "leverage", "covariance.ratios")]
+
+francedata$residuals<-resid(Framodel2)
+francedata$standardized.residuals <- rstandard(Framodel2)
+francedata$studentized.residuals <- rstudent(Framodel2)
+francedata$cooks.distance <- cooks.distance(Framodel2)
+francedata$dfbeta <- dfbeta(Framodel2)
+francedata$dffit <- dffits(Framodel2)
+francedata$leverage <- hatvalues(Framodel2)
+francedata$covariance.ratios <- covratio(Framodel2)
+
+write.table(francedata, "France Data with Diagnostics", sep = "\t", row.names = FALSE)
+
+francedata$large.residual <- francedata$standardized.residuals > 2 | francedata$standardized.residuals < -2
+sum(francedata$large.residual)
+francedata[francedata$large.residual, c("year", "suicide_rate", "gdp_per_capita", "sex", "standardized.residuals", "cooks.distance", "leverage", "covariance.ratios")]
+
+germanydata$residuals<-resid(Germmodel2)
+germanydata$standardized.residuals <- rstandard(Germmodel2)
+germanydata$studentized.residuals <- rstudent(Germmodel2)
+germanydata$cooks.distance <- cooks.distance(Germmodel2)
+germanydata$dfbeta <- dfbeta(Germmodel2)
+germanydata$dffit <- dffits(Germmodel2)
+germanydata$leverage <- hatvalues(Germmodel2)
+germanydata$covariance.ratios <- covratio(Germmodel2)
+write.table(germanydata, "Germany Data with Diagnostics", sep = "\t:", row.names = FALSE)
+
+germanydata$large.residual <- germanydata$standardized.residuals > 2 | germanydata$standardized.residuals < -2
+sum(germanydata$large.residual)
+germanydata[germanydata$large.residual, c("year", "suicide_rate", "gdp_per_capita", "sex", "standardized.residuals", "cooks.distance", "leverage", "covariance.ratios")]
+
+safdata$residuals<-resid(SAmodel2)
+safdata$standardized.residuals <- rstandard(SAmodel2)
+safdata$studentized.residuals <- rstudent(SAmodel2)
+safdata$cooks.distance <- cooks.distance(SAmodel2)
+safdata$dfbeta <- dfbeta(SAmodel2)
+safdata$dffit <- dffits(SAmodel2)
+safdata$leverage <- hatvalues(SAmodel2)
+safdata$covariance.ratios <- covratio(SAmodel2)
+write.table(safdata, "South Africa Data with Diagnostics", sep = "\t", row.names = FALSE)
+
+safdata$large.residual <- safdata$standardized.residuals >2 | safdata$standardized.residuals < -2
+sum(safdata$large.residual)
+safdata[safdata$large.residual, c("year", "suicide_rate", "gdp_per_capita", "sex", "standardized.residuals", "cooks.distance", "leverage", "covariance.ratios")]
+
+plot(USAmodel2)
+hist(rstudent(USAmodel2))
+
+plot(UKmodel2)
+hist(rstudent(UKmodel2))
+
+plot(Framodel2)
+hist(rstudent(Framodel2))
+
+plot(Germmodel2)
+hist(rstudent(Germmodel2))
+
+plot(SAmodel2)
+hist(rstudent(SAmodel2))
+
+```
+
+Looking at our results, we have several large residuals for our three datasets.  In none of them is the cook's distance > 1 so it does not appear that they are having any undue influence on the model.  While some of the leverage values and covariance ratios may be outside the range for our data set, since the Cook's distance is <1, these are likely not significantly influencing the model.  Furthermore, our plots seem to suggest that for our five different models, they violate the assumption of normality.
+
+I want to take a further look at our data that has been segmented by gender with the five different country's datapoint.
+
+```{r country models, echo = TRUE}
+malecountrymodel1 <- lm(countrymalesuiciderate ~ countrymalegdpcapita, data = countrymale)
+malecountrymodel2 <- lm(countrymalesuiciderate ~ countrymalegdpcapita + countrymalevar, data = countrymale)
+
+summary(malecountrymodel1)
+confint(malecountrymodel1)
+summary(malecountrymodel2)
+confint(malecountrymodel2)
+
+femalecountrymodel1 <- lm(countryfemalesuiciderate ~ countryfemalegdpcapita, data = countryfemale)
+femalecountrymodel2 <- lm(countryfemalesuiciderate ~ countryfemalegdpcapita + countryfemalevar, data = countryfemale)
+
+summary(femalecountrymodel1)
+confint(femalecountrymodel1)
+summary(femalecountrymodel2)
+confint(femalecountrymodel2)
+```
+
+Now we will check this data for outliers as well on the model incorporating country since these had higher R^2 statistics.
+
+```{r outliers on country, echo = TRUE}
+countrymale$residuals<-resid(malecountrymodel2)
+countrymale$standardized.residuals <- rstandard(malecountrymodel2)
+countrymale$studentized.residuals <- rstudent(malecountrymodel2)
+countrymale$cooks.distance <- cooks.distance(malecountrymodel2)
+countrymale$dfbeta <- dfbeta(malecountrymodel2)
+countrymale$dffit <- dffits(malecountrymodel2)
+countrymale$leverage <- hatvalues(malecountrymodel2)
+countrymale$covariance.ratios <- covratio(malecountrymodel2)
+
+write.table(countrymale, "Male Country Data with Diagnostics", sep = "\t", row.names = FALSE)
+
+countrymale$large.residual <- countrymale$standardized.residuals > 2 | countrymale$standardized.residuals < -2
+sum(countrymale$large.residual)
+countrymale[countrymale$large.residual, c("year", "suicide_rate", "gdp_per_capita", "country", "standardized.residuals", "cooks.distance", "leverage", "covariance.ratios")]
+
+countryfemale$residuals<-resid(femalecountrymodel2)
+countryfemale$standardized.residuals <- rstandard(femalecountrymodel2)
+countryfemale$studentized.residuals <- rstudent(femalecountrymodel2)
+countryfemale$cooks.distance <- cooks.distance(femalecountrymodel2)
+countryfemale$dfbeta <- dfbeta(femalecountrymodel2)
+countryfemale$dffit <- dffits(femalecountrymodel2)
+countryfemale$leverage <- hatvalues(femalecountrymodel2)
+countryfemale$covariance.ratios <- covratio(femalecountrymodel2)
+
+write.table(countryfemale, "Female Country Data with Diagnostics", sep = "\t", row.names = FALSE)
+
+countryfemale$large.residual <- countryfemale$standardized.residuals > 2 | countryfemale$standardized.residuals < -2
+sum(countryfemale$large.residual)
+countryfemale[countryfemale$large.residual, c("year", "suicide_rate", "gdp_per_capita", "country", "standardized.residuals", "cooks.distance", "leverage", "covariance.ratios")]
+```
+
+Looking at our large residuals for our two models, it appears none of these large residuals have cook's distance greater than one so even if they are outliers, they do not appear to be unduly influencing the model.
+
+We should also check our models for our assumptions regarding the residuals.
+
+```{r assumptions plots, echo = TRUE}
+
+plot(malecountrymodel2)
+hist(rstudent(malecountrymodel2))
+plot(femalecountrymodel2)
+hist(rstudent(femalecountrymodel2))
+
+```
+These graphs seems to suggest that are our data is not normally distributed and violates normality so our model is not necessarily generalizable outside of our data.
+
+The other question that I want to try to answer is the relationship between each country's suicide rate and age range (loosely indicating generation).
+
+```{r generation subset, echo = TRUE}
+usdata1<- suicidedata %>% filter(country == "United States", sex == "male")
+ussuiciderate1 <- usdata1$suicide_rate
+
+
+ukdata1<- suicidedata %>% filter(country == "United Kingdom", sex == "male")
+uksuiciderate1 <- ukdata1$suicide_rate
+
+
+francedata1<- suicidedata %>% filter(country == "France", sex == "male")
+francesuiciderate1 <- francedata1$suicide_rate
+
+
+germanydata1<- suicidedata %>% filter(country == "Germany", sex == "male")
+germanysuiciderate1 <- germanydata1$suicide_rate
+
+
+safdata1<- suicidedata %>% filter(country == "South Africa", sex == "male")
+safsuiciderate1 <- safdata1$suicide_rate
+
+
+usdata2<- suicidedata %>% filter(country == "United States", sex == "female")
+ussuiciderate2 <- usdata2$suicide_rate
+
+
+ukdata2<- suicidedata %>% filter(country == "United Kingdom", sex == "female")
+uksuiciderate2 <- ukdata2$suicide_rate
+
+
+francedata2<- suicidedata %>% filter(country == "France", sex == "female")
+
+
+germanydata2<- suicidedata %>% filter(country == "Germany", sex == "female")
+germanysuiciderate2 <- germanydata2$suicide_rate
+
+
+safdata2<- suicidedata %>% filter(country == "South Africa", sex == "female")
+safsuiciderate2 <- safdata2$suicide_rate
+
+
+```
+
+Next, we'll plot the data using GGplot.
+
+```{r generation ggplot, echo = TRUE}
+ggplot(usdata1, aes(x = year, y = suicide_rate, col = age)) + geom_line() + geom_point() + ggtitle("Plot of Male US Suicide Rate by Year and Age") + xlab("Year") + ylab("Suicide Rate per 100,000 People")
+
+ggplot(ukdata1, aes(x = year, y = suicide_rate, col = age)) + geom_line() + geom_point() + ggtitle("Plot of Male United Kingdom Suicide Rate by Year and Age") + xlab("Year") + ylab("Suicide Rate per 100,000 People")
+
+ggplot(francedata1, aes(x = year, y = suicide_rate, col = age)) + geom_line() + geom_point() +  ggtitle("Plot of Male France Suicide Rate by Year and Age") + xlab("Year") + ylab("Suicide Rate per 100,000 People")
+
+ggplot(germanydata1, aes(x = year, y = suicide_rate, col = age)) + geom_line() + geom_point() + ggtitle("Plot of Male Germany Suicide Rate by Year and Age") + xlab("Year") + ylab("Suicide Rate per 100,000 People")
+
+ggplot(safdata1, aes(x = year, y = suicide_rate, col = age)) + geom_line() + geom_point() +  ggtitle("Plot of Male South Africa Suicide Rate by Year and Age") + xlab("Year") + ylab("Suicide Rate per 100,000 People")
+
+ggplot(usdata2, aes(x = year, y = suicide_rate, col = age)) + geom_line() + geom_point() + ggtitle("Plot of Female US Suicide Rate by Year and Age") + xlab("Year") + ylab("Suicide Rate per 100,000 People")
+
+ggplot(ukdata2, aes(x = year, y = suicide_rate, col = age)) + geom_line() + geom_point() + ggtitle("Plot of Female United Kingdom Suicide Rate by Year and Age") + xlab("Year") + ylab("Suicide Rate per 100,000 People")
+
+ggplot(francedata2, aes(x = year, y = suicide_rate, col = age)) + geom_line() + geom_point() + ggtitle("Plot of Female France Suicide Rate by Year and Age") + xlab("Year") + ylab("Suicide Rate per 100,000 People")
+
+ggplot(germanydata2, aes(x = year, y = suicide_rate, col = age)) + geom_line() + geom_point() + ggtitle("Plot of Female Germany Suicide Rate by Year and Age") + xlab("Year") + ylab("Suicide Rate per 100,000 People")
+
+ggplot(safdata2, aes(x = year, y = suicide_rate, col = age)) + geom_line() + geom_point() + ggtitle("Plot of Female South Africa Suicide Rate by Year and Age") + xlab("Year") + ylab("Suicide Rate per 100,000 People")
+```
+
+The plots above have a significant amount of information.  France, Germany, and the US male suicide rates have the highest suicide rates in the 75+ age category.  For the UK male population it is age 35-54 and for South Africa it is 75+ again.  
+
+Female suicide rates in the age 35-54 age range are highest in the US and UK.  France and Germany's female suicide rates are highest in the age 75+ age group.  Finally South Africa's suicide rates are highest in the 15-24 age group.
+
+A note of caution based on South Africa's data.  First, it does not have reporting as early as some of the countries.  Germany is the same way.  Furthermore, the suicide rates in South Africa are within a very small range between 0 and 1.5 per 100,000 people so the values we get and the changes we see proportionally may not be as large as some of the other countries.
+
+The differences between these graphs present future opportunities for study.  For both men and women Germany and France's suicide rates are highest in the 75+ age range category?  Are there possibly cultural or country specific circumstances that could correlate with this finding? why in France, Germany, and the US are 75+ male suicide rates the highest while in the UK it is 35-54 years old? 
+
+Why does the female suicide rate at pretty much all age ranges seem to be increasing in the US while male suicide rates appear to have levelled out for most age ranges?
+
+My initial hypotheses questions are mostly focused on the five countries of the US, UK, France, Germany, and South Africa.  Another way that I was interested in viewing my data was exploring comparing the US’ population and suicide numbers together and comparing them by gender to see if there are any interesting relationships.  Furthermore, I also wanted to see if there were any correlations between gender, country total gdp, and country total population as predictors of suicide rate.
+
+```{r us data new subset, echo = TRUE}
+usonly25 <- suicideData2 %>% filter(country == "United States", age == "25-34 years") %>% dplyr::select(-`country`, -`age`)
+
+ggplot(usonly25, aes(x = population, y = suicides_no, col = sex)) + geom_point() + geom_line() + xlab("Population") + ylab("Number of Suicides") + ggtitle("Plot of US Population vs. Number of Suicides Separated By Gender")
+
+usonly25pop <- usonly25$population
+usonly25suic <- usonly25$suicides_no
+
+cor(usonly25pop, usonly25suic)
+
+usonlymodelpop <- lm(suicides_no ~ population, data = usonly25)
+summary(usonlymodelpop)
+
+usonlymodel <- lm(suicides_no ~., data = usonly25)
+summary(usonlymodel)
+
+```
+
+```{r pop/suicide outliers, echo = TRUE}
+usonly25$residuals<-resid(usonlymodel)
+usonly25$standardized.residuals <- rstandard(usonlymodel)
+usonly25$studentized.residuals <- rstudent(usonlymodel)
+usonly25$cooks.distance <- cooks.distance(usonlymodel)
+usonly25$dfbeta <- dfbeta(usonlymodel)
+usonly25$dffit <- dffits(usonlymodel)
+usonly25$leverage <- hatvalues(usonlymodel)
+usonly25$covariance.ratios <- covratio(usonlymodel)
+
+write.table(usonly25, "US 25-34 Data with Diagnostics", sep = "\t", row.names = FALSE)
+
+usonly25$large.residual <- usonly25$standardized.residuals > 2 | usonly25$standardized.residuals < -2
+sum(usonly25$large.residual)
+usonly25[usonly25$large.residual, c("year", "sex", "suicides_no", "population", "total_gdp", "standardized.residuals", "cooks.distance", "leverage", "covariance.ratios")]
+
+plot(usonlymodel)
+hist(rstudent(usonlymodel))
+```
+
+Looking at the data here there are 3 data points with standardized residuals concerning for outliers but with a cook's distance <1, they do not seem to be unduly influencing the model.
+
+When plotting our model to test our assumptions, there is a gap in the fitted values but there seems to be reasonable distribution along the mean.  Our Q-Q plot also appears to be almost normally distributed.  Our Histogram of our US dataset appears to have almost a bimodal distribution.
+
+For the age 25-34 US only population, the correlation between population and total number of suicides was 0.277226 with an R^2 of 0.076 meaning that with these two factors, this only accounts for about 7.6% of the variability in our data though the positive correlation of 0.277 indicates a moderately strong relationship that as population increases, the suicide numbers increase.  This relationship is also reflected and applies for both males and females in the scatterplot.  This relationship makes sense in that in general, there are going to be more suicides as there are more people around though we cannot say that an increase in population causes the increase number of suicides.
+
+Using a multiple regression model for the age 25-34 US only and running suicide numbers predicted by the other variables we get statistically significant P-values for the variables of male sex as well as population.  The variables of year and total_gdp do not have significant p-values in this model.  The adjusted R squared value and the R squared value indicating a fairly good fit and since they are both similar at 0.9789 and 0.9774 meaning that this model likely generalizes well given this data.  Furthermore, this model suggests that this model accounts for 97% of the variability in our data.
+
+My final steps will be to attempt a machine learning model on this data.
+
+```{r knn, echo = TRUE}
+
+sqrt(nrow(usonly25))
+
+usonly25sex <- dummy.code(usonly25$sex)
+usonly25suicides <- usonly25$suicides_no
+usonly25year <- usonly25$year
+usonly25popul <- usonly25$population
+
+usonly25clean <- cbind(usonly25year, usonly25sex, usonly25suicides, usonly25popul)
+usonly25clean <- as.data.frame(usonly25clean)
+
+set.seed(1234)
+
+sample <- sample(1:nrow(usonly25clean), 0.8 * nrow(usonly25clean))
+knn_train <- usonly25clean[sample,]
+knn_test <- usonly25clean[-sample,]
+
+target_cat <- usonly25clean[sample,4]
+test_cat <- usonly25clean[-sample,4]
+
+knn <- knn(knn_train, knn_test, cl=target_cat, k=8)
+
+tab <- table(knn, test_cat)
+
+accuracy <- ((sum(diag(tab)))/ (sum(rowSums(tab))))
+accuracy
+```
+
+```{r other ml, echo = TRUE}
+
+set.seed(12345)
+
+countrymaleml <- countrymale %>% dplyr::select(country, year, suicide_rate, gdp_per_capita)
+countryfemaleml <- countryfemale %>% dplyr::select(country, year, suicide_rate, gdp_per_capita)
+
+countrymalemlcountry <- dummy.code(countrymaleml$country)
+countrymalemlyear <- countrymaleml$year
+countrymalemlsuicide <- countrymaleml$suicide_rate
+countrymalemlgdp <- countrymaleml$gdp_per_capita
+
+countrymaleclean <- cbind(countrymalemlcountry, countrymalemlyear, countrymalemlsuicide, countrymalemlgdp)
+countrymaleclean <- as.data.frame(countrymaleclean)
+
+countryfemmlcountry <- dummy.code(countryfemaleml$country)
+countryfemmlyear <- countryfemaleml$year
+countryfemmlsuicide <- countryfemaleml$suicide_rate
+countryfemmlgdp <- countryfemaleml$gdp_per_capita
+
+countryfemaleclean <- cbind(countryfemmlcountry, countryfemmlyear, countryfemmlsuicide, countryfemmlgdp)
+countryfemaleclean <- as.data.frame(countryfemaleclean)
+
+sqrt(nrow(countrymaleclean))
+
+sample1 <- sample(1:nrow(countrymaleclean), 0.8 * nrow(countrymaleclean))
+knn_train1 <- countrymaleclean[sample,]
+knn_test1 <- countrymaleclean[-sample,]
+
+target_cat1 <- countrymaleclean[sample, 7]
+test_cat1 <- countrymaleclean[-sample, 7]
+
+knn1 <- knn(knn_train1, knn_test1, cl = target_cat1, k = 12)
+tab1 <- table(knn1, test_cat1)
+
+accuracy1 <- ((sum(diag(tab1)))/ (sum(rowSums(tab1))))
+accuracy1
+
+sample2 <- sample(1:nrow(countryfemaleclean), 0.8 * nrow(countryfemaleclean))
+knn_train2 <- countryfemaleclean[sample,]
+knn_test2 <- countryfemaleclean[-sample,]
+
+target_cat2 <-countryfemaleclean[sample, 7]
+test_cat2 <- countryfemaleclean[-sample, 7]
+
+knn2 <- knn(knn_train2, knn_test2, cl = target_cat2, k = 12)
+tab2 <- table(knn2, test_cat2)
+
+accuracy2 <- ((sum(diag(tab2)))/ (sum(rowSums(tab2))))
+accuracy2
+
+
+```
+
+
+Using the square root of the number of rows in our US Only Ages 25-34 dataset, we get a value of 7.87.  Running the K Nearest Neighbors algorithm using a K of 7, we get a predictive accuracy of 7.69%.  This is approximately the same when using a K of 8.  Overall, using K Nearest Neighbors to predict the amount of suicides based on year, gender, and population is not accurate.
+
+A note of caution based on South Africa's data.  First, it does not have reporting as early as some of the countries.  Germany is the same way.  Furthermore, the suicide rates in South Africa are within a very small range between 0 and 1.5 per 100,000 people so the values we get and the changes we see proportionally may not be as large as some of the other countries.
+
+The differences between these graphs present future opportunities for study.  For both men and women Germany and France's suicide rates are highest in the 75+ age range category?  Are there possibly cultural or country specific circumstances that could correlate with this finding? why in France, Germany, and the US are 75+ male suicide rates the highest while in the UK it is 35-54 years old? Why does the female suicide rate at pretty much all age ranges seem to be increasing in the US while male suicide rates appear to have levelled out for most age ranges?
+
+
